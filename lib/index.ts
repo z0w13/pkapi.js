@@ -54,7 +54,7 @@ class PKAPI {
 	#debug: boolean = true;
 
 	#version_warning = false;
-	
+
 	constructor(data?: APIData) {
 		this.#_base = (data?.base_url ?? 'https://api.pluralkit.me');
 		this.#_version = (data?.version ?? 2);
@@ -66,7 +66,7 @@ class PKAPI {
 			validateStatus: (s) => s < 300 && s > 100,
 			baseURL: `${this.#_base}/v${this.#_version}`,
 			headers: {
-				'User-Agent': this.#user_agent 
+				'User-Agent': this.#user_agent
 			}
 		})
 	}
@@ -74,7 +74,7 @@ class PKAPI {
 	/*
 	**			SYSTEM FUNCTIONS
 	*/
-	
+
 	async getSystem(data: GetSystemOptions = { }) {
 		var token = this.#token ?? data.token;
 		if(data.system == null && !token) throw new Error('Must provide a token or ID.');
@@ -251,7 +251,7 @@ class PKAPI {
 		return new Member(this, resp.data);
 	}
 
-	async getMember(data: { token?: string, member: string  }) {
+	async getMember(data: { token?: string, member: string	}) {
 		if(data.member == null) throw new Error('Must provide a member ID.');
 		var token = this.#token || data.token;
 		try {
@@ -547,7 +547,7 @@ class PKAPI {
 
 	async deleteGroup(data: { token?: string, group: string }) {
 		if(this.version < 2) throw new Error("Groups are only available for API version 2.");
-		
+
 		if(data.group == null) throw new Error("Must provide a group ID.");
 		var token = this.#token || data.token;
 		if(!token) throw new Error("DELETE requires a token.");
@@ -674,7 +674,7 @@ class PKAPI {
 
 		if(data.members) {
 			if(Array.isArray(data.members)) {
-				body.members = data.members;	
+				body.members = data.members;
 			} else {
 				body.members = Object.values(data.members).map((m: IMember) => m.id);
 			}
@@ -888,7 +888,7 @@ class PKAPI {
 
 		if(options?.body) {
 			request.headers["content-type"] = "application/json";
-	        request.data = JSON.stringify(options.body);
+			request.data = JSON.stringify(options.body);
 		}
 
 		if(this.version == 1 && !this.#version_warning) {
@@ -900,7 +900,7 @@ class PKAPI {
 			);
 			this.#version_warning = true;
 		}
-			
+
 		try {
 			var resp = await this.#inst(route, request);
 		} catch(e: any) {
@@ -910,7 +910,7 @@ class PKAPI {
 
 		return resp;
 	}
-	
+
 	set base_url(s) {
 		this.#_base = s;
 		this.#inst.defaults.baseURL = `${this.#_base}/v${this.#_version}`;
@@ -958,7 +958,7 @@ class PKAPI {
 export default PKAPI;
 export {
 	PKAPI,
-	
+
 	APIError,
 
 	Group,
