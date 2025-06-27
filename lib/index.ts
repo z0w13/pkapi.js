@@ -14,12 +14,17 @@ import APIError from './structures/apiError';
 
 import ROUTES from './routes';
 
+import DefaultRateLimiter from './RateLimiter/DefaultRateLimiter';
+import BaseRateLimiter from './RateLimiter/BaseRateLimiter';
+import NoOpRateLimiter from './RateLimiter/NoOpRateLimiter';
+
 export interface APIData {
 	base_url?: string;
 	version?: number;
 	token?: string;
 	user_agent?: string;
 	debug?: boolean;
+	rate_limiter?: BaseRateLimiter;
 }
 
 export interface RequestOptions {
@@ -52,6 +57,7 @@ class PKAPI {
 	#_version: number = 2;
 	#user_agent: string = 'PKAPI.js/5.x';
 	#debug: boolean = true;
+	#rate_limiter: BaseRateLimiter;
 
 	#version_warning = false;
 
@@ -61,6 +67,7 @@ class PKAPI {
 		this.#token = data?.token;
 		this.#user_agent = (data?.user_agent ?? 'PKAPI.js/5.x');
 		this.#debug = (data?.debug !== undefined ? data.debug : true);
+		this.#rate_limiter = data?.rate_limiter ?? new NoOpRateLimiter();
 
 		this.#inst = axios.create({
 			validateStatus: (s) => s < 300 && s > 100,
@@ -901,14 +908,22 @@ class PKAPI {
 			this.#version_warning = true;
 		}
 
-		try {
-			var resp = await this.#inst(route, request);
-		} catch(e: any) {
-			if(this.#debug) console.log(e)
-			throw new APIError(this, e.response);
-		}
+		while (true) {
+			await this.#rate_limiter.wait();
+			try {
+				var resp = await this.#inst(route, request);
+				await this.#rate_limiter.handleResponse(resp);
+			} catch (e: any) {
+				if (await this.#rate_limiter.handleError(e)) {
+					continue;
+				}
 
-		return resp;
+				if(this.#debug) console.log(e)
+				throw new APIError(this, e.response);
+			}
+
+			return resp;
+		}
 	}
 
 	set base_url(s) {
@@ -953,6 +968,13 @@ class PKAPI {
 	set debug(b) {
 		this.#debug = b;
 	}
+
+	get rate_limiter() {
+		return this.#rate_limiter;
+	}
+	set rate_limiter(r) {
+		this.#rate_limiter = r;
+	}
 }
 
 export default PKAPI;
@@ -988,4 +1010,8 @@ export {
 
 	SystemGuildSettings,
 	ISystemGuildSettings,
+
+	BaseRateLimiter,
+	NoOpRateLimiter,
+	DefaultRateLimiter,
 }
